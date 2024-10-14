@@ -1,0 +1,234 @@
+{% extends 'layouts/base.html' %} {% block title %}Competition Details{% endblock title %} {% block stylesheets %} {% endblock stylesheets %} {% block content %}
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <div class="row align-items-center py-4">
+        <div class="col-lg-6 col-7">
+          <h6 class="display-3 text-white d-inline-block mb-0">コンペ詳細</h6>
+          <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4"></nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+  <div class="row">
+    <div class="col-md-8 col-12">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="competition-name" class="mb-0">Loading...</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-item">
+            <h2>Description</h2>
+            <p class="m-3" id="competition-description">Loading...</p>
+          </div>
+          <hr class="my-4" />
+          <div class="info-item">
+            <h2>Difficulty</h2>
+            <div class="m-3">
+              <span id="competition-difficulty" class="badge">Loading...</span>
+            </div>
+          </div>
+          <hr class="my-4" />
+          <div class="info-item">
+            <h2>Reference Materials</h2>
+            <ul id="reference-materials" class="m-3 list-group"></ul>
+          </div>
+          <hr class="my-4" />
+          <div class="info-item">
+            <h2>Templates</h2>
+            <ul id="templates" class="m-3 list-group"></ul>
+          </div>
+          <hr class="my-4" />
+          <div class="info-item">
+            <h2>Notes</h2>
+            <p class="m-3" id="competition-notes">Loading...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-12">
+      <div class="card" id="my-score-container">
+        <div class="card-header">
+          <h3 class="mb-0">Your Result</h3>
+        </div>
+
+        <div class="card-body">
+          <div class="mb-3">
+            <h4>Notebook</h4>
+            <a id="notebook-link" href="#" target="_blank" class="btn btn-primary">Open Notebook</a>
+          </div>
+          <hr class="my-4" />
+          <div class="mb-3">
+            <h4>Updated Time</h4>
+            <p id="updated-time" class="lead">Loading...</p>
+          </div>
+          <hr class="my-4" />
+          <div class="mb-3">
+            <h4>Best Score</h4>
+            <p id="best-score" class="lead">Loading...</p>
+          </div>
+          <hr class="my-4" />
+          <div class="mb-3">
+            <h4>Local Rank</h4>
+            <p id="local-rank" class="lead">Loading...</p>
+          </div>
+          <hr class="my-4" />
+          <div class="text-center">
+            <button id="update-button" class="btn btn-primary">更新</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card shadow">
+        <div class="card-header">Local Ranking</div>
+        <div class="card-body table-responsive">
+          <div>
+            <table class="table align-items-center">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col">順位</th>
+                  <th scope="col">ユーザ</th>
+                  <th scope="col">スコア</th>
+                  <th scope="col">Notebook</th>
+                </tr>
+              </thead>
+              <tbody class="local-ranking-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include "includes/footer.html" %}
+</div>
+
+<script>
+  const competition = {{competition|tojson}}
+  const user_result = {{user_result|tojson}}
+  const local_user_ranking = {{local_user_ranking|tojson}}
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+    document.getElementById("competition-name").textContent = competition.name;
+    document.getElementById("competition-description").textContent = competition.description;
+
+    const difficultyElement = document.getElementById("competition-difficulty");
+    difficultyElement.textContent = competition.difficulty;
+    difficultyElement.className = `badge badge-${getDifficultyColor(competition.difficulty)}`;
+
+    const referenceList = document.getElementById("reference-materials");
+    competition.references.forEach((ref) => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      li.innerHTML = `<a class="stretched-link" href="${ref.url}" target="_blank" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none'" style="text-decoration: none;">${ref.comment} <img src="/static/img/link.jpg" width="20" height="20"></a>`;
+      referenceList.appendChild(li);
+    });
+
+    const templateList = document.getElementById("templates");
+    competition.templates.forEach((template) => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      li.innerHTML = `<a class="stretched-link" href="${template.url}" target="_blank" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none'" style="text-decoration: none;">${template.comment} <img src="/static/img/link.jpg" width="20" height="20"></a>`;
+      templateList.appendChild(li);
+    });
+
+    document.getElementById("competition-notes").textContent = competition.notes;
+
+
+    // 新しいスコア情報を取得するコード
+    document.getElementById("notebook-link").href = user_result.notebook_url;
+        document.getElementById("updated-time").textContent = user_result.updated_time;
+        document.getElementById("best-score").textContent = user_result.best_score;
+
+        document.getElementById("local-rank").textContent = user_result.local_rank;
+
+
+
+    const tableBody = document.querySelector(".local-ranking-list");
+    tableBody.innerHTML = ""; // Clear existing content
+
+    local_user_ranking.forEach((entry) => {
+      const row = document.createElement("tr");
+      row.innerHTML += `
+      <td class="position">
+        ${entry.position}
+      </td>
+    `;
+
+      row.innerHTML += `
+      <th scope="row" class="name card m-0">
+        <div class="media align-items-center">
+          <div href="" class="stretched-link avatar rounded-circle mr-3 ">
+            <img alt="Image placeholder" src="../../../assets/img/dashboard/free/theme/${entry.image}">
+          </div>
+          <a href="google.com" class="media-body stretched-link link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"  onMouseOver="this.style.textDecoration='underline';" onMouseOut="this.style.textDecoration='none'">
+            <span class="mb-0 text-sm">${entry.user}</span>
+          </a>
+        </div>
+      </th>
+    `;
+      row.innerHTML += `
+        <td class="score">
+          ${entry.score}
+        </td>
+      `;
+      row.innerHTML += `
+        <td class="notebook">
+          <a href="${entry.notebook_link}" class="btn btn-sm btn-neutral">View Notebook</a>
+        </td>
+      `;
+
+      tableBody.appendChild(row);
+  });
+
+  document.getElementById("update-button").addEventListener("click", async () => {
+    try {
+      const response = await fetch("/update_competition_score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // Reload the page after successful update
+        location.reload();
+      }else if (response.status === 400) {
+        //
+        alert("kaggleのユーザー名をプロフィールから登録する必要があります");
+      } else {
+        console.error("Failed to update competition score");
+        console.error(response.message)
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+  function getDifficultyColor(difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case "easy":
+        return "success";
+      case "medium":
+        return "warning";
+      case "hard":
+        return "danger";
+      default:
+        return "info";
+    }
+  }
+
+  })
+</script>
+{% endblock content %} {% block javascripts %}
+<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+{% endblock javascripts %}

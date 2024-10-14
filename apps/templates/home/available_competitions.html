@@ -1,0 +1,161 @@
+{% extends 'layouts/base.html' %} {% block title %} Dashboard {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %} {% block content %}
+
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <div class="row align-items-center py-4">
+        <div class="col-lg-6 col-7">
+          <h6 class="display-3 text-white d-inline-block mb-0">コンペ</h6>
+          <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4"></nav>
+        </div>
+      </div>
+      <!-- Card stats -->
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid mt--6">
+  <!-- Page content -->
+  <div class="row">
+    <div class="col">
+      <div class="card shadow">
+        <div class="card-header">Table</div>
+        <div class="card-body table-responsive">
+          <div>
+            <table class="table align-items-center">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col">コンペ</th>
+                  <th scope="col">難易度</th>
+                  <th scope="col">達成者数</th>
+                  <th scope="col">達成者リスト</th>
+                  <th scope="col">あなたのベストスコア</th>
+                  <th scope="col">あなたのローカル順位</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody class="list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include "includes/footer.html" %}
+</div>
+
+<script>
+  // JSON data structure
+  const projectData = {{ competitions|tojson }}
+
+  function generateTable(data) {
+    const tableBody = document.querySelector(".list");
+    tableBody.innerHTML = ""; // Clear existing content
+
+    data.forEach((project) => {
+      const row = document.createElement("tr");
+
+      // Project Name and Image
+      row.innerHTML += `
+        <th scope="row" class="name card m-0">
+          <div class="media align-items-center">
+            <div href="" class="stretched-link avatar rounded-circle mr-3 ">
+              <img alt="Image placeholder" src="${project.image}">
+            </div>
+            <a href="${project.url}" class="media-body stretched-link link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"  onMouseOver="this.style.textDecoration='underline';" onMouseOut="this.style.textDecoration='none'">
+              <span class="mb-0 text-sm">${project.name}</span>
+            </a>
+          </div>
+        </th>
+      `;
+
+      // difficulity
+      row.innerHTML += `
+        <td class="difficulty">
+          ${project.difficulty}
+        </td>
+      `;
+
+      // archiver
+      row.innerHTML += `
+        <td class="n_achiever">
+          ${project.n_achiever}
+        </td>
+      `;
+
+      // Users
+      const usersHTML = project.users
+        .map(
+          (user) => `
+        <a href="#" class="avatar avatar-sm" data-toggle="tooltip" data-original-title="User">
+          <img alt="Image placeholder" src="../../../assets/img/dashboard/free/theme/${user}" class="rounded-circle">
+        </a>
+      `
+        )
+        .join("");
+
+      row.innerHTML += `
+        <td>
+          <div class="avatar-group">
+            ${usersHTML}
+          </div>
+        </td>
+      `;
+
+      // Best Score
+      row.innerHTML += `
+        <td class="your-best-score">
+          ${project.your_best_score}
+        </td>
+      `;
+      // Local Rank
+      row.innerHTML += `
+        <td class="your-local-position">
+          ${project.your_local_position}
+        </td>
+      `;
+
+
+
+
+      /*
+      // Actions
+      row.innerHTML += `
+        <td class="text-right">
+          <div class="dropdown">
+            <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
+               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fas fa-ellipsis-v"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+              <a class="dropdown-item" href="#">Action</a>
+              <a class="dropdown-item" href="#">Another action</a>
+              <a class="dropdown-item" href="#">Something else here</a>
+            </div>
+          </div>
+        </td>
+      `;
+      */
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Call the function to generate the table
+  document.addEventListener("DOMContentLoaded",
+    () => {
+      generateTable(projectData);
+    });
+</script>
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+
+{% endblock javascripts %}

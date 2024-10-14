@@ -1,0 +1,128 @@
+{% extends 'layouts/base.html' %} {% block title %} Dashboard {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %} {% block content %}
+
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <div class="row align-items-center py-4">
+        <div class="col-lg-6 col-7">
+          <h6 class="display-3 text-white d-inline-block mb-0">ユーザーランキング</h6>
+          <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4"></nav>
+        </div>
+      </div>
+      <!-- Card stats -->
+    </div>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+  <!-- Page content -->
+  <div class="row">
+    <div class="col">
+      <div class="card shadow">
+        <div class="card-header">Table</div>
+        <div class="card-body table-responsive">
+          <div>
+            <table class="table align-items-center">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col">順位</th>
+                  <th scope="col">ユーザー</th>
+                  <th scope="col">レート</th>
+                  <th scope="col">達成コンペ(公認)</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody class="list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include "includes/footer.html" %}
+</div>
+
+<script>
+  // JSON data structure
+  const userData = {{user_data|tojson}}
+
+
+  function generateTable(data) {
+    const tableBody = document.querySelector(".list");
+    tableBody.innerHTML = ""; // Clear existing content
+
+    data.forEach((user) => {
+      const row = document.createElement("tr");
+
+      // difficulity
+      row.innerHTML += `
+        <td class="position">
+          ${user.position}
+        </td>
+      `;
+      // Project Name and Image
+      row.innerHTML += `
+        <th scope="row" class="name card m-0">
+          <div class="media align-items-center">
+            <div href="" class="stretched-link avatar rounded-circle mr-3 ">
+              <img alt="Image placeholder" src="../../../assets/img/dashboard/free/theme/${user.image}">
+            </div>
+            <a href="${user.url}" class="media-body stretched-link link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"  onMouseOver="this.style.textDecoration='underline';" onMouseOut="this.style.textDecoration='none'">
+              <span class="mb-0 text-sm">${user.name}</span>
+            </a>
+          </div>
+        </th>
+      `;
+
+
+      row.innerHTML += `
+        <td class="rate">
+          ${user.rating}
+        </td>
+      `;
+      row.innerHTML += `
+        <td class="n_achieved">
+          ${user.n_achieved} (${user.n_authenticated_achieved})
+        </td>
+      `;
+
+
+      // Actions
+      row.innerHTML += `
+        <td class="text-right">
+          <div class="dropdown">
+            <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
+               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fas fa-ellipsis-v"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+              <a class="dropdown-item" href="#">Action</a>
+              <a class="dropdown-item" href="#">Another action</a>
+              <a class="dropdown-item" href="#">Something else here</a>
+            </div>
+          </div>
+        </td>
+      `;
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Call the function to generate the table
+  generateTable(userData);
+</script>
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+
+<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+
+{% endblock javascripts %}

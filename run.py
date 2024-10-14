@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+
 """
 Copyright (c) 2019 - present AppSeed.us
 """
@@ -8,16 +9,22 @@ from sys import exit
 
 from authlib.integrations.flask_client import OAuth
 from decouple import config
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_user, logout_user
 from flask_migrate import Migrate
 
 from apps import create_app, db, login_manager
 from apps.authentication import blueprint
 from apps.authentication.forms import CreateAccountForm, LoginForm
-from apps.authentication.models import Users
 from apps.authentication.util import verify_pass
+from apps.competition.models import (
+    Competitions,
+    DifficultyEnum,
+    Users,
+    user_competition,
+)
 from apps.config import config_dict
+from run_admin import admin_required, apply_admin
 
 # WARNING: Don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
@@ -33,6 +40,7 @@ except KeyError:
 
 app = create_app(app_config)
 Migrate(app, db)
+apply_admin(app, db)
 
 # Initialize OAuth
 oauth = OAuth(app)
@@ -185,8 +193,113 @@ def internal_error(error):
     return render_template("home/page-500.html"), 500
 
 
+@app.route("/api/get_all_competitions", methods=["GET"])
+def get_all_competitions():
+    competitions = Competitions.query.all()
+    competition_list = [{"name": comp.name} for comp in competitions]
+    return jsonify(competition_list)
+
+
+@app.route("/api/get_competition_data", methods=["GET"])
+def get_competition_data():
+    competition_url = request.args.get("competition")
+    competition = Competitions.query.filter_by(name=competition_url).first()
+    if competition:
+        data = {
+            "difficulties": [difficulty.value for difficulty in DifficultyEnum],
+            "selected_difficulty": competition.difficulty.value,
+            "resources": competition.resources,
+            "notes": competition.notes,
+            "template_urls": competition.template_urls,
+        }
+        return jsonify(data)
+    else:
+        return jsonify({"error": "Competition not found"}), 404
+
+
+@app.route("/api/get_difficulties", methods=["GET"])
+def get_difficulties():
+    difficulties = [difficulty.value for difficulty in DifficultyEnum]
+    return jsonify(difficulties)
+
+
+@admin_required
+@app.route("/api/register_competition_data", methods=["POST"])
+def register_competition_data():
+    data = request.json
+    competition_url = data["competition_url"]
+    difficulty = data["difficulty"]
+    resources = data.get("resources", [])
+    notes = data.get("notes", "")
+    template_urls = data.get("template_urls", [])
+
+    try:
+        competition = Competitions.query.filter_by(name=competition_url).first()
+    except Exception as e:
+        return jsonify(
+            {"error": "Failed to register competition data", "exception": str(e)}
+        ), 500
+    if competition:
+        return jsonify({"error": "Competition already exists"}), 400
+
+    competition = Competitions(
+        name=competition_url,
+        difficulty=DifficultyEnum[difficulty.upper()],
+        is_authenticated=True,
+        resources=resources,
+        notes=notes,
+        template_urls=template_urls,
+    )
+
+    db.session.add(competition)
+    db.session.commit()
+    return jsonify({"message": "Competition data registered successfully"})
+
+
+@app.route("/api/update_competition_data", methods=["POST"])
+@admin_required
+def update_competition_data():
+    data = request.json
+    competition_url = data["competition_url"]
+    difficulty = data["difficulty"]
+    resources = data.get("resources", [])
+    notes = data.get("notes", "")
+    template_urls = data.get("template_urls", [])
+
+    competition = Competitions.query.filter_by(name=competition_url).first()
+    if not competition:
+        return jsonify({"error": "Competition not found"}), 404
+
+    competition.difficulty = DifficultyEnum[difficulty.upper()]
+    competition.resources = resources
+    competition.notes = notes
+    competition.template_urls = template_urls
+    db.session.commit()
+    return jsonify({"message": "Competition data updated successfully"})
+
+
+@app.route("/api/delete_competition_data", methods=["POST"])
+@admin_required
+def delete_competition_data():
+    data = request.json
+    competition_url = data["competition_url"]
+
+    competition = Competitions.query.filter_by(name=competition_url).first()
+    if not competition:
+        return jsonify({"error": "Competition not found"}), 404
+
+    db.session.delete(competition)
+    db.session.commit()
+    return jsonify({"message": "Competition data deleted successfully"})
+
+
 if DEBUG:
     app.logger.info("DEBUG       = " + str(DEBUG))
+    app.logger.info("Environment = " + get_config_mode)
+    app.logger.info("DBMS        = " + app_config.SQLALCHEMY_DATABASE_URI)
+
+if __name__ == "__main__":
+    app.run()
     app.logger.info("Environment = " + get_config_mode)
     app.logger.info("DBMS        = " + app_config.SQLALCHEMY_DATABASE_URI)
 

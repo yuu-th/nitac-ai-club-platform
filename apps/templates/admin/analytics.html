@@ -1,0 +1,163 @@
+{% extends 'admin/master.html' %} {% block body %}
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2>コンペティションを選択</h2>
+      <form id="competition-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="competition-url">コンペティションURL:</label>
+          <input type="text" class="form-control" id="competition-url" required />
+        </div>
+        <button type="button" id="submit-btn" class="btn btn-primary">選択</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="difficulty-card" class="row mb-4" style="display: none">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">難易度を選択</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="difficulty-select">難易度:</label>
+            <select class="form-control" id="difficulty-select"></select>
+          </div>
+          <button type="button" id="save-difficulty-btn" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resources-card" class="row mb-4" style="display: none">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">参考資料</div>
+        <div class="card-body" id="resources-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="template-card" class="row mb-4" style="display: none">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">俺のテンプレート</div>
+        <div class="card-body">
+          <div id="templates-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM fully loaded and parsed");
+
+    const competitionForm = document.getElementById("competition-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const saveDifficultyBtn = document.getElementById("save-difficulty-btn");
+    const difficultyCard = document.getElementById("difficulty-card");
+    const resourcesCard = document.getElementById("resources-card");
+    const templateCard = document.getElementById("template-card");
+    const difficultySelect = document.getElementById("difficulty-select");
+    const resourcesList = document.getElementById("resources-list");
+    const templatesList = document.getElementById("templates-list");
+
+    submitBtn.addEventListener("click", function (e) {
+      console.log("Submit button clicked");
+      const competitionUrl = document.getElementById("competition-url").value;
+      console.log("Submitting form with URL:", competitionUrl);
+
+      fetch("/api/get_competition_data?competition=" + encodeURIComponent(competitionUrl), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      })
+        .then((response) => {
+          console.log("Received response:", response);
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Parsed data:", data);
+
+          // Populate difficulty select
+          difficultySelect.innerHTML = "";
+          data.difficulties.forEach((difficulty) => {
+            const option = document.createElement("option");
+            option.value = difficulty;
+            option.textContent = difficulty;
+            if (difficulty === data.selected_difficulty) {
+              option.textContent += " (set)";
+              option.selected = true;
+            }
+            difficultySelect.appendChild(option);
+          });
+
+          // Populate resources list
+          resourcesList.innerHTML = "";
+          data.resources.forEach((resource) => {
+            const p = document.createElement("p");
+            p.textContent = resource;
+            resourcesList.appendChild(p);
+          });
+
+          // Populate templates list
+          templatesList.innerHTML = "";
+          data.templates.forEach((template) => {
+            const p = document.createElement("p");
+            p.textContent = `データの前処理のみを施したノートブックへのリンク: ${template}`;
+            templatesList.appendChild(p);
+          });
+
+          // Show all cards
+          difficultyCard.style.display = "block";
+          resourcesCard.style.display = "block";
+          templateCard.style.display = "block";
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("データの取得中にエラーが発生しました。コンソールを確認してください。");
+        });
+    });
+
+    saveDifficultyBtn.addEventListener("click", function (e) {
+      console.log("Save difficulty button clicked");
+      const competitionUrl = document.getElementById("competition-url").value;
+      const selectedDifficulty = difficultySelect.value;
+      console.log("Saving difficulty for URL:", competitionUrl, "with difficulty:", selectedDifficulty);
+
+      fetch("/api/set_competition_data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({
+          competition_url: competitionUrl,
+          difficulty: selectedDifficulty,
+        }),
+      })
+        .then((response) => {
+          console.log("Received response:", response);
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Parsed data:", data);
+          alert("難易度が保存されました。");
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("データの保存中にエラーが発生しました。コンソールを確認してください。");
+        });
+    });
+  });
+</script>
+{% endblock %} {% block javascripts %} {% endblock %}

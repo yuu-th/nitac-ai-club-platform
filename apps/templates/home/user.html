@@ -1,0 +1,121 @@
+{% extends 'layouts/base.html' %} {% block title %} Dashboard {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %} {% block content %}
+
+<!-- Header -->
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <div class="row align-items-center py-4">
+        <div class="col-lg-6 col-7">
+          <h6 class="display-3 text-white d-inline-block mb-0">ユーザーページ</h6>
+          <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4"></nav>
+        </div>
+      </div>
+      <!-- Card stats -->
+    </div>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+  <!-- Profile Section -->
+  <div class="row">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body text-center">
+          <img src="{{ profile_image }}" class="rounded-circle" alt="Profile Image" width="150" />
+          <h5 class="card-title mt-3">{{ user_name }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">レート</h5>
+          <p class="card-text">Current Rating: {{ rating }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Competitions Table -->
+  <div class="row mt-4">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">コンペのリスト</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-items-center table-flush">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">コンペ名</th>
+                <th scope="col">難易度</th>
+                <th scope="col">レートの加算ポイント</th>
+                <th scope="col">ベストスコア</th>
+                <th scope="col">Notebook</th>
+                <th scope="col">ローカル順位</th>
+                <th scope="col">提出者数</th>
+                <th scope="col">更新時刻</th>
+              </tr>
+            </thead>
+            <tbody id="competitions-list">
+              <!-- Dynamic content will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include "includes/footer.html" %}
+</div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+
+<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+
+<script>
+
+  const competitions = {{user_competition_list|tojson}}
+
+
+  document.addEventListener("DOMContentLoaded",  function () {
+
+    const tableBody = document.getElementById("competitions-list");
+    tableBody.innerHTML = ""; // Clear existing content
+
+    competitions.forEach((comp) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <th scope="row" class="name card m-0">
+          <div class="media align-items-center">
+            <div href="" class="stretched-link avatar rounded-circle mr-3 ">
+              <img alt="Image placeholder" src="../../../assets/img/dashboard/free/theme/${comp.image}">
+            </div>
+            <a href="${comp.url}" class="media-body stretched-link link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"  onMouseOver="this.style.textDecoration='underline';" onMouseOut="this.style.textDecoration='none'">
+              <span class="mb-0 text-sm">${comp.name}</span>
+            </a>
+          </div>
+        </th>
+        <td>${comp.difficulty}</td>
+        <td>${comp.additional_rating}</td>
+        <td>${comp.best_score}</td>
+        <td><a href="${comp.notebook_url}">Link</a></td>
+        <td>${comp.local_rank}</td>
+        <td>${comp.n_achiever}</td>
+        <td>${comp.updated_time}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+  });
+</script>
+
+{% endblock javascripts %}

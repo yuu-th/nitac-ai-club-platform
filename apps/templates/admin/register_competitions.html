@@ -1,0 +1,171 @@
+{% extends 'admin/master.html' %} {% block body %}
+<div class="container mt-4">
+  <h2>コンペティションを登録</h2>
+  <form id="register-form">
+    <div class="form-group">
+      <label for="competition-url">コンペティションURL:</label>
+      <input type="text" class="form-control" id="competition-url" required />
+    </div>
+    <div class="form-group">
+      <label for="difficulty">難易度:</label>
+      <select class="form-control" id="difficulty"></select>
+    </div>
+    <div class="form-group">
+        <label for="resources">参考資料:</label>
+        <ul id="resources-list" class="list-group mb-2"></ul>
+        <div class="input-group">
+          <input type="text" class="form-control mt-2" id="resource-input" placeholder="参考資料を追加" />
+          <input class="form-control mt-2" id="resource-comment-input" placeholder="コメントを追加"></input>
+          <div class="input-group-append">
+            <button type="button" id="add-resource-btn" class="btn btn-secondary">追加</button>
+          </div>
+        </div>
+      </div>
+    <div class="form-group">
+      <label for="notes">備考:</label>
+      <textarea class="form-control" id="notes"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="template-urls">テンプレートノートブックURL:</label>
+        <ul id="template-urls-list" class="list-group mb-2"></ul>
+        <div class="input-group">
+          <input type="text" class="form-control mt-2" id="template-url-input" placeholder="テンプレートURLを追加" />
+          <input class="form-control mt-2" id="template-url-comment-input" placeholder="コメントを追加"></input>
+          <div class="input-group-append">
+            <button type="button" id="add-template-url-btn" class="btn btn-secondary">追加</button>
+          </div>
+        </div>
+      </div>
+    <button type="button" id="register-btn" class="btn btn-primary">登録</button>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const difficultySelect = document.getElementById("difficulty");
+    const resourcesList = document.getElementById("resources-list");
+    const resourceInput = document.getElementById("resource-input");
+    const resourceCommentInput = document.getElementById("resource-comment-input");
+    const addResourceBtn = document.getElementById("add-resource-btn");
+
+    const templateUrlsList = document.getElementById("template-urls-list");
+    const templateUrlInput = document.getElementById("template-url-input");
+    const templateCommentInput = document.getElementById("template-url-comment-input");
+    const addTemplateUrlBtn = document.getElementById("add-template-url-btn");
+
+    // サーバーから難易度の選択肢を取得
+    fetch("/api/get_difficulties")
+      .then((response) => response.json())
+      .then((difficulties) => {
+        difficulties.forEach((difficulty) => {
+          const option = document.createElement("option");
+          option.value = difficulty;
+          option.textContent = difficulty;
+          difficultySelect.appendChild(option);
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching difficulties:", error);
+      });
+
+    // 参考資料をリストに追加
+    addResourceBtn.addEventListener("click", function () {
+      const resource = resourceInput.value.trim();
+      const comment = resourceCommentInput.value.trim();
+      if (resource) {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex flex-column";
+        li.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <span>${resource}</span>
+            <button class="btn btn-danger btn-sm">削除</button>
+          </div>
+          <small class="text-muted">${comment}</small>
+        `;
+        li.querySelector("button").addEventListener("click", function () {
+          resourcesList.removeChild(li);
+        });
+        resourcesList.appendChild(li);
+        resourceInput.value = "";
+        resourceCommentInput.value = "";
+      }
+    });
+
+    // テンプレートURLをリストに追加
+    addTemplateUrlBtn.addEventListener("click", function () {
+      const templateUrl = templateUrlInput.value.trim();
+      const comment = templateCommentInput.value.trim();
+      if (templateUrl) {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex flex-column";
+        li.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <span>${templateUrl}</span>
+            <button class="btn btn-danger btn-sm">削除</button>
+          </div>
+          <small class="text-muted">${comment}</small>
+        `;
+        li.querySelector("button").addEventListener("click", function () {
+          templateUrlsList.removeChild(li);
+        });
+        templateUrlsList.appendChild(li);
+        templateUrlInput.value = "";
+        templateCommentInput.value = "";
+      }
+    });
+
+    // 登録ボタンのクリックイベント
+    document.getElementById("register-btn").addEventListener("click", function () {
+      const competitionUrl = document.getElementById("competition-url").value;
+      const difficulty = document.getElementById("difficulty").value;
+      const resources = Array.from(resourcesList.children).map((li) => ({
+        url: li.querySelector("span").textContent,
+        comment: li.querySelector("small").textContent,
+      }));
+      const notes = document.getElementById("notes").value;
+      const templateUrls = Array.from(templateUrlsList.children).map((li) => ({
+        url: li.querySelector("span").textContent,
+        comment: li.querySelector("small").textContent,
+      }));
+
+
+      // 入力フィールドが未入力または書きかけの場合に警告を表示
+      if (!competitionUrl || !difficulty || resourceInput.value.trim() || resourceCommentInput.value.trim() || templateUrlInput.value.trim() || templateCommentInput.value.trim()) {
+        alert("一部のinputが入力途中です");
+        return;
+      }
+      fetch("/api/register_competition_data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({
+          competition_url: competitionUrl,
+          difficulty: difficulty,
+          resources: resources,
+          notes: notes,
+          template_urls: templateUrls,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            alert(data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("データの登録中にエラーが発生しました。コンソールを確認してください。");
+        });
+    });
+  });
+</script>
+{% endblock %}
