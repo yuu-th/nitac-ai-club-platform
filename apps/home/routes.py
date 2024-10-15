@@ -18,7 +18,7 @@ from apps.competition.models import (
 from apps.home import blueprint
 from kaggle_utils import calc_result_list
 
-from .utils import calc_additional_rating, calc_local_position
+from .utils import calc_local_position, calc_rating, calc_total_rating
 
 
 @blueprint.route("/index")
@@ -137,6 +137,7 @@ def ranking():
     users = load_all_users()
     if users is None:
         return render_template("home/page-404.html"), 404
+
     return render_template("home/ranking.html", user_data=users)
 
 
@@ -162,7 +163,7 @@ def load_competition_list_user_participated(user_id):
                     "url": f"competitions/{competition.id}",
                     "difficulty": competition.difficulty.value,
                     "n_achiever": competition.get_achievers_count(),
-                    "additional_rating": calc_additional_rating(record.best_score),
+                    "additional_rating": calc_rating(user, competition, record),
                     "notebook_url": record.notebook_link,
                     "updated_time": record.last_updated_time.strftime(
                         "%Y-%m-%d %H:%M:%S"
@@ -392,18 +393,11 @@ def update_competition_score(user_id):
     # ...
     user = Users.query.filter_by(id=user_id).first()
     assert user is not None
-    print("a")
     if user.user_name_in_kaggle is None:
-        print("a")
-        return "failed", 400
-
-        # return jsonify(
-        #     {"status": "failed", "message": "Kaggle user name is not registered"}
-        # )
-    print("b")
+        return jsonify(
+            {"status": "failed", "message": "Kaggle user name is not registered"}
+        ), 400
     result_list = calc_result_list(user.user_name_in_kaggle)
-    print(user.user_name_in_kaggle)
-    print(result_list)
     if len(result_list) == 0:
         return "failed", 400
 
@@ -445,6 +439,7 @@ def update_competition_score(user_id):
             db.session.execute(update_stmt)
     try:
         db.session.commit()
+        update_rating(user.id)
         return jsonify(
             {"status": "success", "message": "Competitions updated successfully"}
         ), 200
@@ -483,24 +478,52 @@ def update_profile():
     kaggle_username = data.get("kaggle_username")
 
     if not username:
-        # flash("Username is required", "danger")
-        return redirect(url_for("home_blueprint.profile"))
+        return jsonify({"status": "error", "message": "Username is required"}), 400
 
     user = Users.query.get(current_user.id)
     if not user:
-        return redirect(url_for("home_blueprint.profile"))
+        return jsonify({"status": "error", "message": "User not found"}), 404
 
     user.username = username
     user.user_name_in_kaggle = kaggle_username
 
     try:
         db.session.commit()
-        flash("Profile updated successfully", "success")
+        return jsonify(
+            {"status": "success", "message": "Profile updated successfully"}
+        ), 200
     except Exception as e:
         db.session.rollback()
-        flash(f"Error updating profile: {str(e)}", "danger")
+        return jsonify(
+            {"status": "error", "message": f"Error updating profile: {str(e)}"}
+        ), 500
 
-    return redirect(url_for("home_blueprint.profile"))
+
+@login_required
+@blueprint.route("/update_rating", methods=["POST"])
+def update_my_rating():
+    return update_rating(current_user.id)
+
+
+@login_required
+@blueprint.route("/update_rating/<string:user_id>", methods=["POST"])
+def update_rating(user_id):
+    user = Users.query.get(user_id)
+    if not user:
+        return jsonify({"status": "error", "message": "User not found"}), 404
+
+    user.rating = calc_total_rating(user)
+
+    try:
+        db.session.commit()
+        return jsonify(
+            {"status": "success", "message": "Rating updated successfully"}
+        ), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(
+            {"status": "error", "message": f"Error updating rating: {str(e)}"}
+        ), 500
 
 
 @login_required
