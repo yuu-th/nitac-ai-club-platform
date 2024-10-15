@@ -1,4 +1,17 @@
 {% extends 'layouts/base.html' %} {% block title %}Competition Details{% endblock title %} {% block stylesheets %} {% endblock stylesheets %} {% block content %}
+<style>
+  /* competition.css */
+  #loading-spinner {
+    display: none;
+    margin-top: 10px;
+  }
+
+  #update-button:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+  }
+</style>
 <!-- Header -->
 <div class="header bg-primary pb-6">
   <div class="container-fluid">
@@ -198,6 +211,8 @@
 
     // ボタンを無効化し、スピナーを表示
     updateButton.disabled = true;
+    updateButton.classList.add("btn-secondary");
+    updateButton.classList.remove("btn-primary");
     loadingSpinner.style.display = "inline-block";
 
     try {
@@ -209,25 +224,25 @@
       });
 
       if (response.status === 200) {
-        location.reload()
-      }else if(response.status===204){
-        alert("変更は検出されませんでした")
+        location.reload();
+      } else if (response.status === 204) {
+        alert("変更は検出されませんでした");
       } else if (response.status === 400) {
         alert("kaggleのユーザー名をプロフィールから登録する必要があります");
       } else if (response.status === 500) {
-        alert("サーバー内でエラーが発生しました。")
-      }
-      else{
-        alert("予期せぬエラーが発生しました。管理人に問い合わせてください")
+        alert("サーバー内でエラーが発生しました。");
+      } else {
+        alert("予期せぬエラーが発生しました。管理人に問い合わせてください");
         console.error("Failed to update competition score");
         console.error(response.message);
       }
-
     } catch (error) {
       console.error("Error:", error);
     } finally {
       // ボタンを有効化し、スピナーを非表示
       updateButton.disabled = false;
+      updateButton.classList.add("btn-primary");
+      updateButton.classList.remove("btn-secondary");
       loadingSpinner.style.display = "none";
     }
   });
