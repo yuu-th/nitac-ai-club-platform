@@ -388,18 +388,20 @@ def update_my_competition_score():
 
 @blueprint.route("/update_competition_score/<string:user_id>", methods=["POST"])
 def update_competition_score(user_id):
-    # Logic to update the competition score
-    # For example, update the score in the database
-    # ...
     user = Users.query.filter_by(id=user_id).first()
-    assert user is not None
+    if user is None:
+        return jsonify({"status": "failed", "message": "User not found"}), 404
+
     if user.user_name_in_kaggle is None:
         return jsonify(
             {"status": "failed", "message": "Kaggle user name is not registered"}
         ), 400
+
     result_list = calc_result_list(user.user_name_in_kaggle)
     if len(result_list) == 0:
-        return "failed", 400
+        return jsonify({"status": "failed", "message": "No results found"}), 400
+
+    changes_made = False
 
     for result in result_list:
         competition = Competitions.query.filter_by(name=result.competition_url).first()
@@ -410,8 +412,7 @@ def update_competition_score(user_id):
                 is_authenticated=False,
             )
             db.session.add(competition)
-
-        assert competition is not None
+            changes_made = True
 
         user_competition_record = (
             db.session.query(user_competition)
@@ -427,22 +428,34 @@ def update_competition_score(user_id):
                 notebook_link=result.code_url,
             )
             db.session.execute(insert_stmt)
+            changes_made = True
         else:
-            update_stmt = (
-                user_competition.update()
-                .where(
-                    (user_competition.c.user_id == user.id)
-                    & (user_competition.c.competition_id == competition.id)
+            if (
+                user_competition_record.best_score != result.score
+                or user_competition_record.notebook_link != result.code_url
+            ):
+                update_stmt = (
+                    user_competition.update()
+                    .where(
+                        (user_competition.c.user_id == user.id)
+                        & (user_competition.c.competition_id == competition.id)
+                    )
+                    .values(best_score=result.score, notebook_link=result.code_url)
                 )
-                .values(best_score=result.score, notebook_link=result.code_url)
-            )
-            db.session.execute(update_stmt)
+                db.session.execute(update_stmt)
+                changes_made = True
+
     try:
         db.session.commit()
         update_rating(user.id)
-        return jsonify(
-            {"status": "success", "message": "Competitions updated successfully"}
-        ), 200
+        if changes_made:
+            return jsonify(
+                {"status": "success", "message": "Competitions updated successfully"}
+            ), 200
+        else:
+            return jsonify(
+                {"status": "success", "message": "No changes made to competitions"}
+            ), 204
     except Exception as e:
         db.session.rollback()
         return jsonify(

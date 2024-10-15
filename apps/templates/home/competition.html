@@ -80,6 +80,9 @@
           <hr class="my-4" />
           <div class="text-center">
             <button id="update-button" class="btn btn-primary">更新</button>
+            <div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none">
+              <span class="sr-only">Loading...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -190,6 +193,13 @@
   });
 
   document.getElementById("update-button").addEventListener("click", async () => {
+    const updateButton = document.getElementById("update-button");
+    const loadingSpinner = document.getElementById("loading-spinner");
+
+    // ボタンを無効化し、スピナーを表示
+    updateButton.disabled = true;
+    loadingSpinner.style.display = "inline-block";
+
     try {
       const response = await fetch("/update_competition_score", {
         method: "POST",
@@ -198,18 +208,28 @@
         },
       });
 
-      if (response.ok) {
-        // Reload the page after successful update
-        location.reload();
-      }else if (response.status === 400) {
-        //
-        alert("kaggleのユーザー名をプロフィールから登録する必要があります");
-      } else {
-        console.error("Failed to update competition score");
-        console.error(response.message)
+      if (response.status === 200) {
+        location.reload()
+      }else if(response.status===204){
+        alert("変更は検出されませんでした")
       }
+      } else if (response.status === 400) {
+        alert("kaggleのユーザー名をプロフィールから登録する必要があります");
+      } else if (response.status === 500) {
+        alert("サーバー内でエラーが発生しました。")
+      }
+      else{
+        alert("予期せぬエラーが発生しました。管理人に問い合わせてください")
+        console.error("Failed to update competition score");
+        console.error(response.message);
+      }
+
     } catch (error) {
       console.error("Error:", error);
+    } finally {
+      // ボタンを有効化し、スピナーを非表示
+      updateButton.disabled = false;
+      loadingSpinner.style.display = "none";
     }
   });
 
