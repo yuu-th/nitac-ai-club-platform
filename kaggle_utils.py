@@ -64,7 +64,10 @@ def get_competition_picture(competition_url):
     if competition_url[-1] == "/":
         competition_url = competition_url[:-1]
 
-    search_url_base = f"https://www.kaggle.com/competitions?searchQuery={competition_url.split("/")[-1]}"
+    competition_name = competition_url.split("/")[-1]
+    search_url_base = (
+        f"https://www.kaggle.com/competitions?searchQuery={competition_name}"
+    )
 
     html = get_html(search_url_base)
     soup = BeautifulSoup(html, "html.parser")
