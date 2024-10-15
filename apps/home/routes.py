@@ -393,11 +393,21 @@ def update_competition_score(user_id):
         return jsonify({"status": "failed", "message": "User not found"}), 404
 
     if user.user_name_in_kaggle is None:
-        return jsonify(
-            {"status": "failed", "message": "Kaggle user name is not registered"}
-        ), 400
+        return (
+            jsonify(
+                {"status": "failed", "message": "Kaggle user name is not registered"}
+            ),
+        )
 
-    result_list = calc_result_list(user.user_name_in_kaggle)
+    try:
+        result_list = calc_result_list(user.user_name_in_kaggle)
+    except Exception as e:
+        return jsonify(
+            {
+                "status": "failed",
+                "message": f"Error fetching competition results: {str(e)}",
+            }
+        ), 500
     if len(result_list) == 0:
         return jsonify({"status": "failed", "message": "No results found"}), 400
 
@@ -447,7 +457,15 @@ def update_competition_score(user_id):
 
     try:
         db.session.commit()
-        update_rating(user.id)
+        try:
+            update_rating(user.id)
+        except Exception as e:
+            return jsonify(
+                {
+                    "status": "failed",
+                    "message": f"Error updating rating: {str(e)}",
+                }
+            ), 500
         if changes_made:
             return jsonify(
                 {"status": "success", "message": "Competitions updated successfully"}
