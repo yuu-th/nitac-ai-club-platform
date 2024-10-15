@@ -434,7 +434,7 @@ def update_competition_score(user_id):
                     (user_competition.c.user_id == user.id)
                     & (user_competition.c.competition_id == competition.id)
                 )
-                .values(best_score=result["score"], notebook_link=result["code_url"])
+                .values(best_score=result.score, notebook_link=result.code_url)
             )
             db.session.execute(update_stmt)
     try:

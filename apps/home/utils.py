@@ -1,6 +1,10 @@
 from apps import db
-from apps.competition.models import (Competitions, DifficultyEnum, Users,
-                                     user_competition)
+from apps.competition.models import (
+    Competitions,
+    DifficultyEnum,
+    Users,
+    user_competition,
+)
 
 
 def calc_total_rating(user: Users):
@@ -25,11 +29,11 @@ def calc_rating(user, competition, record):
         assert False
 
     if competition.is_authenticated:
-        if competition.difficulty== DifficultyEnum.EASY:
+        if competition.difficulty == DifficultyEnum.EASY:
             base_point = 10
-        elif competition.difficulty== DifficultyEnum.MEDIUM:
+        elif competition.difficulty == DifficultyEnum.MEDIUM:
             base_point = 20
-        elif competition.difficulty== DifficultyEnum.HARD:
+        elif competition.difficulty == DifficultyEnum.HARD:
             base_point = 30
     else:
         base_point = 10
@@ -74,11 +78,6 @@ def calc_local_position(competition, user, db):
             key=lambda u: db.session.query(user_competition)
             .filter_by(user_id=u.id, competition_id=competition.id)
             .first()
-            .best_score,
-            reverse=True,
-        ).index(user)
-        + 1
-    )
             .best_score,
             reverse=True,
         ).index(user)
