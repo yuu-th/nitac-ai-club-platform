@@ -4,6 +4,8 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
+from datetime import datetime
+
 from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
@@ -134,6 +136,7 @@ def load_all_users():
 @blueprint.route("/ranking")
 @login_required
 def ranking():
+    update_timeout_users_rating(60)
     users = load_all_users()
     if users is None:
         return render_template("home/page-404.html"), 404
@@ -450,10 +453,24 @@ def update_competition_score(user_id):
                         (user_competition.c.user_id == user.id)
                         & (user_competition.c.competition_id == competition.id)
                     )
-                    .values(best_score=result.score, notebook_link=result.code_url)
+                    .values(
+                        best_score=result.score,
+                        notebook_link=result.code_url,
+                        last_updated_time=datetime.now(),
+                    )
                 )
                 db.session.execute(update_stmt)
                 changes_made = True
+            else:
+                update_stmt = (
+                    user_competition.update()
+                    .where(
+                        (user_competition.c.user_id == user.id)
+                        & (user_competition.c.competition_id == competition.id)
+                    )
+                    .values(last_updated_time=datetime.now())
+                )
+                db.session.execute(update_stmt)
 
     try:
         db.session.commit()
@@ -530,14 +547,14 @@ def update_profile():
         ), 500
 
 
-@login_required
-@blueprint.route("/update_rating", methods=["POST"])
-def update_my_rating():
-    return update_rating(current_user.id)
+# @login_required
+# @blueprint.route("/update_rating", methods=["POST"])
+# def update_my_rating():
+#     return update_rating(current_user.id)
 
 
-@login_required
-@blueprint.route("/update_rating/<string:user_id>", methods=["POST"])
+# @login_required
+# @blueprint.route("/update_rating/<string:user_id>", methods=["POST"])
 def update_rating(user_id):
     user = Users.query.get(user_id)
     if not user:
@@ -555,6 +572,16 @@ def update_rating(user_id):
         return jsonify(
             {"status": "error", "message": f"Error updating rating: {str(e)}"}
         ), 500
+
+
+def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
+    users = Users.query.all()
+    for user in users:
+        last_updated_time = max(
+            [competition.last_updated_time for competition in user.competitions]
+        )
+        if datetime.now() - last_updated_time > min_timeout_seconds:
+            update_competition_score(user.id)
 
 
 @login_required
@@ -582,4 +609,5 @@ def route_template(template):
         return render_template("home/page-404.html"), 404
     except Exception as e:
         print(e)
+        return render_template("home/page-500.html"), 500
         return render_template("home/page-500.html"), 500
