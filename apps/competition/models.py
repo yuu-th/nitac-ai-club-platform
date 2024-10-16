@@ -114,7 +114,12 @@ class Competitions(db.Model):
             raise ValueError("Invalid URL")
 
         self.name = html.get_competition_name()
+        if self.name is None:
+            raise ValueError("Invalid URL")
+
         self.description = html.get_competition_description()
+        if self.description is None:
+            raise ValueError("Invalid URL")
         self.url = url
 
         self.image = get_competition_picture(url)

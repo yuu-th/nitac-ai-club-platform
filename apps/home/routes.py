@@ -431,6 +431,7 @@ def update_competition_score(user_id):
             )
             db.session.add(competition)
             changes_made = True
+            db.session.commit()
 
         user_competition_record = (
             db.session.query(user_competition)
