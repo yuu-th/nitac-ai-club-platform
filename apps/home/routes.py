@@ -136,8 +136,8 @@ def load_all_users():
 
 @blueprint.route("/ranking")
 @login_required
-def ranking():
-    threading.Thread(target=update_timeout_users_rating, args=(60,)).start()
+async def ranking():
+    await update_timeout_users_rating(60)
     users = load_all_users()
     if users is None:
         return render_template("home/page-404.html"), 404
@@ -575,7 +575,7 @@ def update_rating(user_id):
         ), 500
 
 
-def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
+async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
     min_timeout_delta = timedelta(seconds=min_timeout_seconds)
     users = Users.query.all()
     for user in users:
@@ -586,8 +586,10 @@ def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
             .last_updated_time
             for competition in user.competitions
         ]
-        if last_updated_times:
+
+        if len(last_updated_times) > 0 and last_updated_times[0] is not None:
             last_updated_time = max(last_updated_times)
+            print(last_updated_times)
             if datetime.now() - last_updated_time > min_timeout_delta:
                 update_competition_score(user.id)
 
