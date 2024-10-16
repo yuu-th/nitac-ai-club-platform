@@ -578,17 +578,17 @@ def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
     min_timeout_delta = timedelta(seconds=min_timeout_seconds)
     users = Users.query.all()
     for user in users:
-        last_updated_time = max(
-            [
-                db.session.query(user_competition)
-                .filter_by(user_id=user.id, competition_id=competition.id)
-                .first()
-                .last_updated_time
-                for competition in user.competitions
-            ]
-        )
-        if datetime.now() - last_updated_time > min_timeout_delta:
-            update_competition_score(user.id)
+        last_updated_times = [
+            db.session.query(user_competition)
+            .filter_by(user_id=user.id, competition_id=competition.id)
+            .first()
+            .last_updated_time
+            for competition in user.competitions
+        ]
+        if last_updated_times:
+            last_updated_time = max(last_updated_times)
+            if datetime.now() - last_updated_time > min_timeout_delta:
+                update_competition_score(user.id)
 
 
 @login_required
