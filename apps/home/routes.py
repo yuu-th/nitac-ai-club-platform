@@ -386,6 +386,7 @@ def competition_detail(competition_id):
 #     return result
 
 
+@login_required
 @blueprint.route("/update_competition_score", methods=["POST"])
 def update_my_competition_score():
     return update_competition_score(current_user.id)
@@ -496,6 +497,10 @@ def update_competition_score(user_id):
                 {"status": "success", "message": "No changes made to competitions"}
             ), 204
     except Exception as e:
+        print(
+            f"Error updating competition score for user {user.username}: {str(e)}",
+            flush=True,
+        )
         db.session.rollback()
         return jsonify(
             {"status": "failed", "message": f"Error updating competitions: {str(e)}"}
