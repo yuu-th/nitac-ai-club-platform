@@ -4,6 +4,7 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
+import threading
 from datetime import datetime, timedelta
 
 from flask import flash, jsonify, redirect, render_template, request, url_for
@@ -136,7 +137,7 @@ def load_all_users():
 @blueprint.route("/ranking")
 @login_required
 def ranking():
-    update_timeout_users_rating(60)
+    threading.Thread(target=update_timeout_users_rating, args=(60,)).start()
     users = load_all_users()
     if users is None:
         return render_template("home/page-404.html"), 404
