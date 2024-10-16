@@ -599,7 +599,9 @@ async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
         #     if datetime.now() - last_updated_time > min_timeout_delta:
         #         update_competition_score(user_id)
 
-        if datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
+        if user.last_kaggle_checked_time is None:
+            update_competition_score(user.id)
+        elif datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
             update_competition_score(user.id)
 
 
