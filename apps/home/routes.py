@@ -136,8 +136,7 @@ def load_all_users():
 
 @blueprint.route("/ranking")
 @login_required
-async def ranking():
-    await update_timeout_users_rating(60)
+def ranking():
     users = load_all_users()
     if users is None:
         return render_template("home/page-404.html"), 404
@@ -196,7 +195,7 @@ def load_user_detail(user_id):
 
 @blueprint.route("/users/<string:user_id>")
 @login_required
-async def user_detail(user_id):
+def user_detail(user_id):
     try:
         # Detect the current page
         segment = get_segment(request)
@@ -208,7 +207,6 @@ async def user_detail(user_id):
         #     "rating": 1040,  # Replace with actual rating
         # }
 
-        await update_user_rating_if_timeout(user_id, 60)
         user_details = load_user_detail(user_id)
         if user_details is None:
             return render_template("home/page-404.html"), 404
@@ -404,6 +402,7 @@ def update_competition_score(user_id):
             jsonify(
                 {"status": "failed", "message": "Kaggle user name is not registered"}
             ),
+            400,
         )
 
     try:
@@ -421,7 +420,7 @@ def update_competition_score(user_id):
     changes_made = False
 
     for result in result_list:
-        competition = Competitions.query.filter_by(name=result.competition_url).first()
+        competition = Competitions.query.filter_by(url=result.competition_url).first()
         if competition is None:
             competition = Competitions(
                 url=result.competition_url,
@@ -579,7 +578,9 @@ def update_rating(user_id):
         ), 500
 
 
-async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
+@blueprint.route("/update_all_users", methods=["POST"])
+def update_timeout_users_rating():
+    min_timeout_seconds = 60 * 60 * 24
     min_timeout_delta = timedelta(seconds=min_timeout_seconds)
     users = Users.query.all()
     for user in users:
@@ -600,33 +601,23 @@ async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
         #         update_competition_score(user_id)
 
         if user.last_kaggle_checked_time is None:
-            update_competition_score(user.id)
+            res = update_competition_score(user.id)
         elif datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
-            update_competition_score(user.id)
+            res = update_competition_score(user.id)
+        else:
+            continue
 
-
-async def update_user_rating_if_timeout(user_id, min_timeout_seconds=60 * 60 * 24):
-    user = db.session.query(Users).filter_by(id=user_id).first()
-    min_timeout_delta = timedelta(seconds=min_timeout_seconds)
-    assert user is not None
-    # last_updated_times = [
-    #     db.session.query(user_competition)
-    #     .filter_by(user_id=user_id, competition_id=competition.id)
-    #     .first()
-    #     .last_updated_time
-    #     for competition in user.competitions
-    # ]
-
-    # if len(last_updated_times) > 0 and last_updated_times[0] is not None:
-    #     last_updated_time = max(last_updated_times)
-    #     print(last_updated_times)
-    #     if datetime.now() - last_updated_time > min_timeout_delta:
-    #         update_competition_score(user_id)
-
-    if user.last_kaggle_checked_time is None:
-        update_competition_score(user_id)
-    elif datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
-        update_competition_score(user_id)
+        if res[1] != 200 and res[1] != 204:
+            print(f"Error updating user {user.id} rating: {res}")
+            raise Exception(
+                f"Failed to update competition score for user {user.username}"
+            )
+    return jsonify(
+        {
+            "status": "success",
+            "message": "Users updated successfully",
+        }
+    ), 200
 
 
 @login_required
