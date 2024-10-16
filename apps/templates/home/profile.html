@@ -41,7 +41,7 @@
               </div>
             </div>
             <div class="col-7">
-              <form method="POST" action="{{ url_for('home_blueprint.update_profile') }}">
+              <form id="form" method="POST" action="{{ url_for('home_blueprint.update_profile') }}">
                 <h6 class="heading-small text-muted mb-4">User information</h6>
                 <div class="pl-lg-4">
                   <div class="container">
@@ -67,7 +67,7 @@
 
                   <div class="col-lg-8">
                     <div class="form-group">
-                      <button type="submit" class="btn btn-primary">Save</button>
+                      <button id="submit-button" type="button" class="btn btn-primary">Save</button>
                       <a href="{{ url_for('home_blueprint.profile') }}" class="btn btn-secondary">Cancel</a>
                     </div>
                   </div>
@@ -85,7 +85,27 @@
   {% include "includes/footer.html" %}
 </div>
 
-<script></script>
+<script>
+  const form = document.getElementById("form");
+  const submitButton = document.getElementById("submit-button");
+
+  submitButton.onclick = () => {
+    const formData = new FormData(form);
+    const action = form.getAttribute("action");
+    const options = {
+      method: "POST",
+      body: formData,
+    };
+    fetch(action, options).then((e) => {
+      if (e.status === 200) {
+        // 画面をリロード
+        location.reload();
+        return;
+      }
+      alert("保存できませんでした。");
+    });
+  };
+</script>
 
 {% endblock content %}
 
