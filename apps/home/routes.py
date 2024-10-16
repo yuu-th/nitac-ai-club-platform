@@ -163,7 +163,7 @@ def load_competition_list_user_participated(user_id):
                 {
                     "name": competition.name,
                     "image": competition.image,
-                    "url": f"competitions/{competition.id}",
+                    "url": f"/competitions/{competition.id}",
                     "difficulty": competition.difficulty.value,
                     "n_achiever": competition.get_achievers_count(),
                     "additional_rating": calc_rating(user, competition, record),
