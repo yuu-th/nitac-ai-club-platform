@@ -482,6 +482,10 @@ def update_competition_score(user_id):
         try:
             update_rating(user.id)
         except Exception as e:
+            print(
+                f"Error updating competition score for user {user.username}: {str(e)}",
+                flush=True,
+            )
             return jsonify(
                 {
                     "status": "failed",
