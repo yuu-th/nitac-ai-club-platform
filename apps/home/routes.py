@@ -408,6 +408,14 @@ def update_competition_score(user_id):
 
     try:
         result_list = calc_result_list(user.user_name_in_kaggle)
+    except ValueError as e:
+        print(f"Error fetching competition results: {str(e)}", flush=True)
+        return jsonify(
+            {
+                "status": "failed",
+                "message": f"Kaggle user {user.user_name_in_kaggle} is not found",
+            }
+        ), 400
     except Exception as e:
         print(f"Error fetching competition results: {str(e)}", flush=True)
         return jsonify(
@@ -618,7 +626,7 @@ def update_timeout_users_rating():
         else:
             continue
 
-        if res[1] != 200 and res[1] != 204:
+        if res[1] != 200 and res[1] != 204 and res[1] != 400:
             print(f"Error updating user {user.id} rating: {res}")
             raise Exception(
                 f"Failed to update competition score for user {user.username}"
