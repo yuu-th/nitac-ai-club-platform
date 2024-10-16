@@ -207,6 +207,8 @@ def user_detail(user_id):
         #     "user_name": "test name",  # Replace with actual user name
         #     "rating": 1040,  # Replace with actual rating
         # }
+
+        await update_user_rating_if_timeout(user_id, 60)
         user_details = load_user_detail(user_id)
         if user_details is None:
             return render_template("home/page-404.html"), 404
@@ -592,6 +594,24 @@ async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
             print(last_updated_times)
             if datetime.now() - last_updated_time > min_timeout_delta:
                 update_competition_score(user.id)
+
+
+async def update_user_rating_if_timeout(user_id, min_timeout_seconds=60 * 60 * 24):
+    user = db.session.query(Users).filter_by(id=user_id).first()
+    min_timeout_delta = timedelta(seconds=min_timeout_seconds)
+    last_updated_times = [
+        db.session.query(user_competition)
+        .filter_by(user_id=user_id, competition_id=competition.id)
+        .first()
+        .last_updated_time
+        for competition in user.competitions
+    ]
+
+    if len(last_updated_times) > 0 and last_updated_times[0] is not None:
+        last_updated_time = max(last_updated_times)
+        print(last_updated_times)
+        if datetime.now() - last_updated_time > min_timeout_delta:
+            update_competition_score(user_id)
 
 
 @login_required
