@@ -4,7 +4,7 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -575,6 +575,7 @@ def update_rating(user_id):
 
 
 def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
+    min_timeout_delta = timedelta(seconds=min_timeout_seconds)
     users = Users.query.all()
     for user in users:
         last_updated_time = max(
@@ -586,7 +587,7 @@ def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
                 for competition in user.competitions
             ]
         )
-        if datetime.now() - last_updated_time > min_timeout_seconds:
+        if datetime.now() - last_updated_time > min_timeout_delta:
             update_competition_score(user.id)
 
 
