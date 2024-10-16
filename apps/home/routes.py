@@ -409,6 +409,7 @@ def update_competition_score(user_id):
     try:
         result_list = calc_result_list(user.user_name_in_kaggle)
     except Exception as e:
+        print(f"Error fetching competition results: {str(e)}", flush=True)
         return jsonify(
             {
                 "status": "failed",
