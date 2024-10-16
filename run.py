@@ -243,7 +243,7 @@ def register_competition_data():
         return jsonify({"error": "Competition already exists"}), 400
 
     competition = Competitions(
-        name=competition_url,
+        url=competition_url,
         difficulty=DifficultyEnum[difficulty.upper()],
         is_authenticated=True,
         resources=resources,

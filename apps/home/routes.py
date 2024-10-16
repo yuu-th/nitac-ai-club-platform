@@ -196,7 +196,7 @@ def load_user_detail(user_id):
 
 @blueprint.route("/users/<string:user_id>")
 @login_required
-def user_detail(user_id):
+async def user_detail(user_id):
     try:
         # Detect the current page
         segment = get_segment(request)
@@ -299,7 +299,8 @@ def load_competition(competition_id):
     result = {
         "id": str(competition.id),
         "name": competition.name,
-        "description": competition.notes,
+        "url": competition.url,
+        "description": competition.description,
         "difficulty": competition.difficulty.value,
         "references": [
             {
@@ -423,7 +424,7 @@ def update_competition_score(user_id):
         competition = Competitions.query.filter_by(name=result.competition_url).first()
         if competition is None:
             competition = Competitions(
-                name=result.competition_url,
+                url=result.competition_url,
                 difficulty=DifficultyEnum["EASY"],
                 is_authenticated=False,
             )
@@ -474,6 +475,7 @@ def update_competition_score(user_id):
                     .values(last_updated_time=datetime.now())
                 )
                 db.session.execute(update_stmt)
+        user.last_kaggle_checked_time = datetime.now()
 
     try:
         db.session.commit()
@@ -581,37 +583,46 @@ async def update_timeout_users_rating(min_timeout_seconds=60 * 60 * 24):
     min_timeout_delta = timedelta(seconds=min_timeout_seconds)
     users = Users.query.all()
     for user in users:
-        last_updated_times = [
-            db.session.query(user_competition)
-            .filter_by(user_id=user.id, competition_id=competition.id)
-            .first()
-            .last_updated_time
-            for competition in user.competitions
-        ]
+        min_timeout_delta = timedelta(seconds=min_timeout_seconds)
+        assert user is not None
+        # last_updated_times = [
+        #     db.session.query(user_competition)
+        #     .filter_by(user_id=user_id, competition_id=competition.id)
+        #     .first()
+        #     .last_updated_time
+        #     for competition in user.competitions
+        # ]
 
-        if len(last_updated_times) > 0 and last_updated_times[0] is not None:
-            last_updated_time = max(last_updated_times)
-            print(last_updated_times)
-            if datetime.now() - last_updated_time > min_timeout_delta:
-                update_competition_score(user.id)
+        # if len(last_updated_times) > 0 and last_updated_times[0] is not None:
+        #     last_updated_time = max(last_updated_times)
+        #     print(last_updated_times)
+        #     if datetime.now() - last_updated_time > min_timeout_delta:
+        #         update_competition_score(user_id)
+
+        if datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
+            update_competition_score(user.id)
 
 
 async def update_user_rating_if_timeout(user_id, min_timeout_seconds=60 * 60 * 24):
     user = db.session.query(Users).filter_by(id=user_id).first()
     min_timeout_delta = timedelta(seconds=min_timeout_seconds)
-    last_updated_times = [
-        db.session.query(user_competition)
-        .filter_by(user_id=user_id, competition_id=competition.id)
-        .first()
-        .last_updated_time
-        for competition in user.competitions
-    ]
+    assert user is not None
+    # last_updated_times = [
+    #     db.session.query(user_competition)
+    #     .filter_by(user_id=user_id, competition_id=competition.id)
+    #     .first()
+    #     .last_updated_time
+    #     for competition in user.competitions
+    # ]
 
-    if len(last_updated_times) > 0 and last_updated_times[0] is not None:
-        last_updated_time = max(last_updated_times)
-        print(last_updated_times)
-        if datetime.now() - last_updated_time > min_timeout_delta:
-            update_competition_score(user_id)
+    # if len(last_updated_times) > 0 and last_updated_times[0] is not None:
+    #     last_updated_time = max(last_updated_times)
+    #     print(last_updated_times)
+    #     if datetime.now() - last_updated_time > min_timeout_delta:
+    #         update_competition_score(user_id)
+
+    if datetime.now() - user.last_kaggle_checked_time > min_timeout_delta:
+        update_competition_score(user_id)
 
 
 @login_required

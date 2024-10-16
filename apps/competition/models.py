@@ -39,6 +39,7 @@ class Users(db.Model, UserMixin):
     rating = Column(db.Integer, default=0)
     is_admin = Column(db.Boolean, default=False)
     user_name_in_kaggle = Column(db.String(64), nullable=True)
+    last_kaggle_checked_time = Column(DateTime, default=datetime.now())
 
     competitions = relationship(
         "Competitions", secondary=user_competition, back_populates="users"
@@ -86,6 +87,8 @@ class Competitions(db.Model):
 
     id = Column(db.Integer, primary_key=True)
     name = Column(db.Text, nullable=False, unique=True)
+    description = Column(db.Text, nullable=False)
+    url = Column(db.Text, nullable=False)
     image = Column(db.Text)
     is_authenticated = Column(db.Boolean)
     difficulty = Column(Enum(DifficultyEnum), nullable=False)
@@ -99,19 +102,22 @@ class Competitions(db.Model):
 
     def __init__(
         self,
-        name,
+        url,
         difficulty,
         is_authenticated,
         resources=None,
         notes=None,
         template_urls=None,
     ):
-        html = HTML(name)
+        html = HTML(url)
         if not html.is_competition_page():
             raise ValueError("Invalid URL")
 
-        self.name = name
-        self.image = get_competition_picture(name)
+        self.name = html.get_competition_name()
+        self.description = html.get_competition_description()
+        self.url = url
+
+        self.image = get_competition_picture(url)
         self.difficulty = difficulty
         self.resources = resources if resources is not None else []
         self.notes = notes

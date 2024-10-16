@@ -133,7 +133,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
 
-    document.getElementById("competition-name").textContent = competition.name;
+    document.getElementById("competition-name").innerHTML = `<a class="stretched-link" href="${competition.url}" target="_blank" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none'" style="text-decoration: none;">${competition.name} <img src="/static/img/link.jpg" width="20" height="20"></a>`
     document.getElementById("competition-description").textContent = competition.description;
 
     const difficultyElement = document.getElementById("competition-difficulty");

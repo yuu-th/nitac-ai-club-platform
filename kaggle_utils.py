@@ -59,6 +59,18 @@ class HTML:
             return True
         return False
 
+    def get_competition_name(self):
+        h1 = self.soup.find_all("h1", class_="sc-jCbFiK jzEmlt")
+        if len(h1) == 0:
+            return None
+        return h1[0].get_text()
+
+    def get_competition_description(self):
+        h1 = self.soup.find_all("span", class_="sc-dENhDJ sc-fTgapq bMuEQk cppFwb")
+        if len(h1) == 0:
+            return None
+        return h1[0].get_text()
+
 
 def get_competition_picture(competition_url):
     if competition_url[-1] == "/":
