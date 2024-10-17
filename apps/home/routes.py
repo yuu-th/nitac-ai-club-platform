@@ -631,6 +631,12 @@ def update_timeout_users_rating():
             raise Exception(
                 f"Failed to update competition score for user {user.username}"
             )
+
+        if res[1] == 400:
+            print(
+                f"Failed to update competition score for user {user.username}: {res}",
+                flush=True,
+            )
     return jsonify(
         {
             "status": "success",
